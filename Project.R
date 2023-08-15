@@ -73,11 +73,18 @@ varietyFeedback <- varietyFeedback %>%
   filter(n() >= 15 | is.na(Variety)) %>%
   ungroup()
 
-# Remove Notes, Customers, Fields, Lot
+# Remove entries with rating and ranking of 0 to remove NA
+varietyFeedback <- varietyFeedback %>%
+  filter((Rating > 0) & (Ranking > 0))
+
+# Remove Notes, Customers, Fields, Lot, Evergree, Nutty, Fruity
 varietyFeedback <- varietyFeedback %>% select(-Notes)
 varietyFeedback <- varietyFeedback %>% select(-Customer)
 varietyFeedback <- varietyFeedback %>% select(-Fields)
 varietyFeedback <- varietyFeedback %>% select(-Lot)
+varietyFeedback <- varietyFeedback %>% select(-Evergreen)
+varietyFeedback <- varietyFeedback %>% select(-Nutty)
+varietyFeedback <- varietyFeedback %>% select(-Fruity)
 
 # Dummy code Variety
 varietyFeedbackDataFrame <- data.frame(varietyFeedback)
@@ -214,7 +221,8 @@ varietyFeedbackLRConfusionMatrix[2, 1] /
 sum(diag(varietyFeedbackLRConfusionMatrix)) / nrow(varietyFeedbackLRTesting)
 
 # Test for Multicollinearity
-ols_vif_tol(varietyFeedbackLRModel)
+# ols_vif_tol does not take in logistic regression, it only works on linear
+ols_vif_tol(varietyFeedbackLRModel) # VERIFY THIS!! CHECK
 
 
 
