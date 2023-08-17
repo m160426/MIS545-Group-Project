@@ -7,6 +7,8 @@
 # install.packages("corrplot")
 # install.packages("olsrr")
 # install.packages("smotefamily")
+# install.packages("rpart.plot")
+# install.packages("neuralnet")
 
 # load libraries
 library(tidyverse)
@@ -14,8 +16,13 @@ library(dummies)
 library(corrplot)
 library(olsrr)
 library(smotefamily)
+library(class)
+library(rpart)
+library(rpart.plot)
+library(neuralnet)
 
 # set wd?
+#setwd("/Users/beau9/Documents/MIS545-Project")
 
 # read csv file
 # Lot - F
@@ -91,26 +98,44 @@ varietyFeedbackDataFrame <- data.frame(varietyFeedback)
 varietyFeedback <- as_tibble(dummy.data.frame(data = varietyFeedbackDataFrame, 
                                          names = "Variety"))
 
-# Normalize?
-
 # Run three queries
-summary(varietyFeedback)
-
-# How many of each Rating
+# Which variety was selected the most?
 varietyFeedback %>%
-  count(Rating) %>%
-  print()
+  filter(VarietySimcoe > 0 & Selected == TRUE) %>%
+  count()
+
+varietyFeedback %>%
+  filter(VarietyCitra >0 & Selected == TRUE) %>%
+  count()
+
+varietyFeedback %>%
+  filter(VarietyMosaic > 0 & Selected == TRUE) %>%
+  count()
+
+varietyFeedback %>%
+  filter(VarietyPahto >0 & Selected == TRUE) %>%
+  count()
+
+varietyFeedback %>%
+  filter(VarietySabro >0 & Selected == TRUE) %>%
+  count()
+
+print("Simcoe was selected the most (53 times)")
+print("Pahto was selected only once")
 
 # How many were Selected vs not Selected
 varietyFeedback %>%
   count(Selected) %>%
   print()
+selectionPercentage <- 117 / (276 + 117)
+sprintf("Selected Percentage: %f", selectionPercentage)
 
 # How many that were detected as Spicy were selected?
 varietyFeedback %>%
   filter(Spicy > 0 & Selected == TRUE) %>%
   count() %>%
   print()
+print("6 varieties were selected that were detected as spicy")
 
 # Recreate the displayAllHistograms()
 displayAllHistograms <- function(tibbleDataset) {
@@ -124,8 +149,10 @@ displayAllHistograms <- function(tibbleDataset) {
     theme_minimal ()
 }
 
-# Call the displayAllHistograms() for Rating and Ranking
-displayAllHistograms(select(varietyFeedback, Rating, Ranking))
+# Call the displayAllHistograms()
+displayAllHistograms(varietyFeedback)
+
+# Normalize data?
 
 # Scatter plot of Ranking vs Rating?
 
@@ -165,6 +192,8 @@ summary(varietyFeedbackLRTrainingSmoted)
 varietyFeedbackLRTrainingSmoted <- varietyFeedbackLRTrainingSmoted %>%
   select(-class)
 
+
+# Logistic Regression -----------------------------------------------------
 # Generage Logistic Regression Model
 varietyFeedbackLRModel <- glm(data = varietyFeedbackLRTrainingSmoted,
                               family = binomial,
@@ -220,10 +249,274 @@ varietyFeedbackLRConfusionMatrix[2, 1] /
 # Calcuate total predictive accuracy
 sum(diag(varietyFeedbackLRConfusionMatrix)) / nrow(varietyFeedbackLRTesting)
 
-# Test for Multicollinearity
-# ols_vif_tol does not take in logistic regression, it only works on linear
-ols_vif_tol(varietyFeedbackLRModel) # VERIFY THIS!! CHECK
+# Multicollinearity?
+
+# Pairwise Correlation?
+
+
 
 
 
                      
+
+
+
+
+# K-Nearest Neighbors -----------------------------------------------------
+
+
+
+
+# Seperate tibble into two
+varietyFeedbackLabels <- varietyFeedback %>% select(Selected)
+varietyFeedbackKNN <- varietyFeedback %>% select(-Selected)
+
+# Set seed and split data
+sampleSetKNN <- sample(nrow(varietyFeedbackKNN),
+                       round(nrow(varietyFeedbackKNN) * 0.75),
+                       replace = FALSE)
+
+# Put 75% of records into Training
+varietyFeedbackKNNTraining <- varietyFeedbackKNN[sampleSetKNN, ]
+varietyFeedbackKNNTrainingLabels <- varietyFeedbackLabels[sampleSetKNN, ]
+
+# Put 25% of records into Testing
+varietyFeedbackKNNTesting <- varietyFeedbackKNN[-sampleSetKNN, ]
+varietyFeedbackKNNTestingLabels <- varietyFeedbackLabels[-sampleSetKNN, ]
+
+# Create Matrix of k-values with their predictive accuracy
+kValueMatrix <- matrix(data = NA,
+                       nrow = 0,
+                       ncol = 2)
+
+# Assign column names to the matrix
+colnames(kValueMatrix) <- c("k value", "Predictive Accuracy")
+
+# Loop through values of k to determine best fitting model
+for (kValue in 1:nrow(varietyFeedbackKNNTraining)) {
+  # Only calculate if it is odd
+  if(kValue %% 2 != 0) {
+    # Generate the model
+    varietyFeedbackKNNPrediction <- knn(train = varietyFeedbackKNNTraining,
+                                        test = varietyFeedbackKNNTesting,
+                                        cl = 
+                                      varietyFeedbackKNNTrainingLabels$Selected,
+                                        k = kValue)
+    
+    # Generate confusion matrix
+    varietyFeedbackKNNConfusionMatrix <- table(
+      varietyFeedbackKNNTestingLabels$Selected, varietyFeedbackKNNPrediction)
+    
+    # Calculate the predictive accuracy
+    varietyFeedbackKNNPredictiveAccuracy <- sum(diag(
+      varietyFeedbackKNNConfusionMatrix)) / nrow(varietyFeedbackKNNTesting)
+    
+    # Add new row to the kValueMatrix
+    kValueMatrix <- rbind(kValueMatrix, c(kValue, 
+                                          varietyFeedbackKNNPredictiveAccuracy))
+  }
+}
+
+# Display kValueMatrix
+print(kValueMatrix)
+
+# Best k value is 29
+varietyFeedbackKNNPrediction <- knn(train = varietyFeedbackKNNTraining,
+                                    test = varietyFeedbackKNNTesting,
+                                    cl = 
+                                      varietyFeedbackKNNTrainingLabels$Selected,
+                                    k = 29)
+
+# Display Prediction
+summary(varietyFeedbackKNNPrediction)
+
+# Generate confusion matrix
+varietyFeedbackKNNConfusionMatrix <- table(
+  varietyFeedbackKNNTestingLabels$Selected, varietyFeedbackKNNPrediction)
+
+# Display confusion matrix
+print(varietyFeedbackKNNConfusionMatrix)
+
+# Calculate the predictive accuracy
+varietyFeedbackKNNPredictiveAccuracy <- sum(diag(
+  varietyFeedbackKNNConfusionMatrix)) / nrow(varietyFeedbackKNNTesting)
+
+# Display predictive accuracy
+print(varietyFeedbackKNNPredictiveAccuracy)
+
+# Naive Bayes -------------------------------------------------------------
+
+
+
+
+# Decision Tree -----------------------------------------------------------
+# Split Data into training and testing
+sampleSetDT <- sample(nrow(varietyFeedback),
+                      round(nrow(varietyFeedback) * .75),
+                      replace = FALSE)
+varietyFeedbackDTTraining <- varietyFeedback[sampleSetDT, ]
+
+# Calculate Selected probability in training dataset
+summary(varietyFeedbackDTTraining$Selected)
+print(86/295)
+
+# Put remaining records in testing tibble
+varietyFeedbackDTTesting <- varietyFeedback[-sampleSetDT, ]
+
+# Train decision tree model
+varietyFeedbackDTModel <- rpart(formula = Selected ~ .,
+                                method = "class",
+                                cp = .02,
+                                data = varietyFeedbackDTTraining)
+
+# Display DT plot
+rpart.plot(varietyFeedbackDTModel)
+
+# Predict classes for each record in the testing dataset
+varietyFeedbackDTPrediction <- predict(varietyFeedbackDTModel,
+                                       varietyFeedbackDTTesting,
+                                       type = "class")
+
+# Display predictions
+print(varietyFeedbackDTPrediction)
+
+# Evaluate model by forming a confusion matrix
+varietyFeedbackDTConfusionMatrix <- table(varietyFeedbackDTTesting$Selected,
+                                          varietyFeedbackDTPrediction)
+
+# Display Confusion Matrix
+print(varietyFeedbackDTConfusionMatrix)
+
+# Calculate Predictive Accuracy
+varietyFeedbackDTPredictiveAccuracy <- sum(diag(
+  varietyFeedbackDTConfusionMatrix)) / nrow(varietyFeedbackDTTesting)
+
+# Display Predictive Accuracy
+print(varietyFeedbackDTPredictiveAccuracy)
+
+# Generate Model with lower complexity parameter
+# This doesnt change DT plot at all, meaning no other complexity to uncover?
+
+
+
+
+
+# Neural Network ----------------------------------------------------------
+# Scale features from 0 to 1
+varietyFeedbackNeural <- varietyFeedback
+varietyFeedbackNeural <- varietyFeedbackNeural %>%
+  mutate(RankingScaled = (Ranking - min(Ranking)) / 
+           (max(Ranking) - min(Ranking))) %>% 
+  mutate(RatingScaled = (Rating - min(Rating)) / 
+           (max(Rating) - min(Rating))) %>%
+  mutate(GreenessScaled = (Greeness - min(Greeness)) / 
+           (max(Greeness) - min(Greeness)))%>%
+  mutate(ShatterScaled = (Shatter - min(Shatter)) / 
+           (max(Shatter) - min(Shatter))) %>%
+  mutate(WoodyScaled = (Woody - min(Woody)) / 
+           (max(Woody) - min(Woody))) %>%
+  mutate(EarthyScaled = (Earthy - min(Earthy)) / 
+           (max(Earthy) - min(Earthy))) %>%
+  mutate(SpicyScaled = (Spicy - min(Spicy)) / 
+           (max(Spicy) - min(Spicy))) %>%
+  mutate(VegetalScaled = (Vegetal - min(Vegetal)) / 
+           (max(Vegetal) - min(Vegetal))) %>%
+  mutate(FloralScaled = (Floral - min(Floral)) / 
+           (max(Floral) - min(Floral))) %>%
+  mutate(GrassyScaled = (Grassy - min(Grassy)) / 
+           (max(Grassy) - min(Grassy))) %>%
+  mutate(HerbalScaled = (Herbal - min(Herbal)) / 
+           (max(Herbal) - min(Herbal))) %>%
+  mutate(StonefruitScaled = (Stonefruit - min(Stonefruit)) / 
+           (max(Stonefruit) - min(Stonefruit))) %>%
+  mutate(CitrusScaled = (Citrus - min(Citrus)) / 
+           (max(Citrus) - min(Citrus))) %>%
+  mutate(TropicalScaled = (Tropical - min(Tropical)) / 
+           (max(Tropical) - min(Tropical))) %>%
+  mutate(OGScaled = (OG - min(OG)) / 
+           (max(OG) - min(OG))) %>%
+  mutate(CheesyScaled = (Cheesy - min(Cheesy)) / 
+           (max(Cheesy) - min(Cheesy))) %>%
+  mutate(PlasticScaled = (Plastic - min(Plastic)) / 
+           (max(Plastic) - min(Plastic))) %>%
+  mutate(DieselScaled = (Diesel - min(Diesel)) / 
+           (max(Diesel) - min(Diesel)))
+  
+#  Split Data into training and testing
+sampleSetNN <- sample(nrow(varietyFeedbackNeural),
+                      round(nrow(varietyFeedbackNeural) * .75),
+                      replace = FALSE)
+varietyFeedbackNeuralTraining <- varietyFeedbackNeural[sampleSetNN, ]
+varietyFeedbackNeuralTesting <- varietyFeedbackNeural[-sampleSetNN, ]  
+  
+# Generate Neural Net
+varietyFeedbackNeuralNet <- neuralnet(
+  formula = Selected ~ 
+    VarietySimcoe +
+    VarietyCitra +
+    VarietyMosaic +
+    VarietyPahto +
+    VarietySabro +  
+    RankingScaled +
+    RatingScaled +
+    GreenessScaled +
+    ShatterScaled +
+    WoodyScaled +
+    EarthyScaled +
+    SpicyScaled +
+    VegetalScaled +
+    FloralScaled +
+    GrassyScaled +
+    HerbalScaled +
+    StonefruitScaled +
+    CitrusScaled +
+    TropicalScaled +
+    OGScaled +
+    CheesyScaled +
+    PlasticScaled +
+    DieselScaled,
+  data = varietyFeedbackNeuralTraining,
+  hidden = 3,
+  act.fct = "logistic",
+  linear.output = FALSE)
+
+# Display nerual network results
+print(varietyFeedbackNeuralNet)
+
+# Visualize the nerual net
+plot(varietyFeedbackNeuralNet)
+
+# Generate probabilities
+varietyFeedbackNeuralNetProbability <- compute(varietyFeedbackNeuralNet,
+                                               varietyFeedbackNeuralTesting)
+  
+# Display predictions
+print(varietyFeedbackNeuralNetProbability$net.result)
+  
+# Convert into 0/1 predictions
+varietyFeedbackNeuralNetPrediction <- 
+  ifelse(varietyFeedbackNeuralNetProbability$net.result > 0.05, 1, 0)
+
+# Display Predictions
+print(varietyFeedbackNeuralNetPrediction)
+
+# Evaluate model by forming a confusion matrix
+varietyFeedbackNeuralNetConfusionMatrix <-
+  table(varietyFeedbackNeuralTesting$Selected,
+        varietyFeedbackNeuralNetPrediction)
+
+# Display the confusion matrix
+print(varietyFeedbackNeuralNetConfusionMatrix)
+
+# Calculate the models Predictive Accuracy
+neuralNetPredictiveAccuracy <- 
+  sum(diag(varietyFeedbackNeuralNetConfusionMatrix)) /
+  nrow(varietyFeedbackNeuralTesting)
+
+# Display the predictive accuracy
+print(neuralNetPredictiveAccuracy)
+
+
+
+
+
