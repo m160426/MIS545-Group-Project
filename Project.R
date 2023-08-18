@@ -70,19 +70,15 @@ str(varietyFeedback)
 # Display summary
 summary(varietyFeedback)
 
-varietyFeedback %>%
-  count(Variety) %>%
-  print()
+# Remove entries with rating and ranking of 0 to remove NA
+varietyFeedback <- varietyFeedback %>%
+  filter((Rating > 0) & (Ranking > 0))
 
 # Remove variety's with less than 15 entries
 varietyFeedback <- varietyFeedback %>%
   group_by(Variety) %>%
   filter(n() >= 15 | is.na(Variety)) %>%
   ungroup()
-
-# Remove entries with rating and ranking of 0 to remove NA
-varietyFeedback <- varietyFeedback %>%
-  filter((Rating > 0) & (Ranking > 0))
 
 # Remove Notes, Customers, Fields, Lot, Evergree, Nutty, Fruity
 varietyFeedback <- varietyFeedback %>% select(-Notes)
@@ -99,43 +95,56 @@ varietyFeedback <- as_tibble(dummy.data.frame(data = varietyFeedbackDataFrame,
                                          names = "Variety"))
 
 # Run three queries
-# Which variety was selected the most?
+# Which variety had the highest selection rate?
 varietyFeedback %>%
   filter(VarietySimcoe > 0 & Selected == TRUE) %>%
-  count()
+  count() / 154
 
 varietyFeedback %>%
-  filter(VarietyCitra >0 & Selected == TRUE) %>%
-  count()
+  filter(VarietyCitra > 0 & Selected == TRUE) %>%
+  count() / 74
 
 varietyFeedback %>%
   filter(VarietyMosaic > 0 & Selected == TRUE) %>%
+  count() / 146
+
+varietyFeedback %>%
+  filter(VarietySabro > 0 & Selected == TRUE) %>%
+  count() / 17
+
+# Which variety smelled the most Citrusy?
+varietyFeedback %>%
+  filter(VarietySimcoe > 0) %>%
+  tally(Citrus) / 154
+
+varietyFeedback %>%
+  filter(VarietyCitra > 0) %>%
+  tally(Citrus) / 74
+
+varietyFeedback %>%
+  filter(VarietyMosaic > 0) %>%
+  tally(Citrus) / 146
+
+varietyFeedback %>%
+  filter(VarietySabro > 0) %>%
+  tally(Citrus) / 17
+
+# How many that were detected as Citrusy were selected?
+varietyFeedback %>%
+  filter(Citrus > 0 & Selected == TRUE) %>%
   count()
-
 varietyFeedback %>%
-  filter(VarietyPahto >0 & Selected == TRUE) %>%
+  filter(Citrus > 0) %>%
   count()
+print(71/250)
+print("If a variety was detected as Citrusy it was selected 28.4% of the time")
 
-varietyFeedback %>%
-  filter(VarietySabro >0 & Selected == TRUE) %>%
-  count()
-
-print("Simcoe was selected the most (53 times)")
-print("Pahto was selected only once")
-
-# How many were Selected vs not Selected
-varietyFeedback %>%
-  count(Selected) %>%
-  print()
-selectionPercentage <- 117 / (276 + 117)
-sprintf("Selected Percentage: %f", selectionPercentage)
-
-# How many that were detected as Spicy were selected?
-varietyFeedback %>%
-  filter(Spicy > 0 & Selected == TRUE) %>%
-  count() %>%
-  print()
-print("6 varieties were selected that were detected as spicy")
+# Normalize data
+calculateZScore <- function(x) {
+  (x - mean(x)) / sd(x)
+}
+varietyFeedback <- varietyFeedback %>%
+  mutate(across(where(is.numeric), calculateZScore))
 
 # Recreate the displayAllHistograms()
 displayAllHistograms <- function(tibbleDataset) {
@@ -152,15 +161,14 @@ displayAllHistograms <- function(tibbleDataset) {
 # Call the displayAllHistograms()
 displayAllHistograms(varietyFeedback)
 
-# Normalize data?
-
-# Scatter plot of Ranking vs Rating?
-
 # Display a correlation plot 
 corrplot(cor(varietyFeedback),
-         method = "number",
+         method = "circle",
          type = "lower")
 
+
+
+# Logistic Regression -----------------------------------------------------
 # Split data into training and testing
 set.seed(545)
 sampleSetLR <- sample(nrow(varietyFeedback),
@@ -178,8 +186,8 @@ classImbalanceMagnitude <- 215 / 167
 # Deal with class imbalance
 varietyFeedbackLRTrainingSmoted <-
   tibble(BLSMOTE(X = data.frame(varietyFeedbackLRTraining),
-               target = varietyFeedbackLRTraining$Selected,
-               dupSize = 2)$data)
+                 target = varietyFeedbackLRTraining$Selected,
+                 dupSize = 4)$data)
 
 summary(varietyFeedbackLRTrainingSmoted$Selected)
 
@@ -192,8 +200,6 @@ summary(varietyFeedbackLRTrainingSmoted)
 varietyFeedbackLRTrainingSmoted <- varietyFeedbackLRTrainingSmoted %>%
   select(-class)
 
-
-# Logistic Regression -----------------------------------------------------
 # Generage Logistic Regression Model
 varietyFeedbackLRModel <- glm(data = varietyFeedbackLRTrainingSmoted,
                               family = binomial,
@@ -212,6 +218,12 @@ exp(coef(varietyFeedbackLRModel)["Rating"])
 
 # increase in Citrus smell means lower odds of being selected
 exp(coef(varietyFeedbackLRModel)["Citrus"])
+
+# Increase in Tropical decreases odds of being selected
+exp(coef(varietyFeedbackLRModel)["Tropical"])
+
+# Increase in Plastic smell increases odds of being selected
+exp(coef(varietyFeedbackLRModel)["Plastic"])
 
 # Use the model to predict outcomes in the testing dataset
 varietyFeedbackLRPrediction <- predict(varietyFeedbackLRModel,
@@ -320,12 +332,12 @@ for (kValue in 1:nrow(varietyFeedbackKNNTraining)) {
 # Display kValueMatrix
 print(kValueMatrix)
 
-# Best k value is 29
+# Best k value is 19
 varietyFeedbackKNNPrediction <- knn(train = varietyFeedbackKNNTraining,
                                     test = varietyFeedbackKNNTesting,
                                     cl = 
                                       varietyFeedbackKNNTrainingLabels$Selected,
-                                    k = 29)
+                                    k = 17)
 
 # Display Prediction
 summary(varietyFeedbackKNNPrediction)
@@ -366,7 +378,7 @@ varietyFeedbackDTTesting <- varietyFeedback[-sampleSetDT, ]
 # Train decision tree model
 varietyFeedbackDTModel <- rpart(formula = Selected ~ .,
                                 method = "class",
-                                cp = .02,
+                                cp = .002,
                                 data = varietyFeedbackDTTraining)
 
 # Display DT plot
@@ -455,7 +467,6 @@ varietyFeedbackNeuralNet <- neuralnet(
     VarietySimcoe +
     VarietyCitra +
     VarietyMosaic +
-    VarietyPahto +
     VarietySabro +  
     RankingScaled +
     RatingScaled +
@@ -490,15 +501,9 @@ plot(varietyFeedbackNeuralNet)
 varietyFeedbackNeuralNetProbability <- compute(varietyFeedbackNeuralNet,
                                                varietyFeedbackNeuralTesting)
   
-# Display predictions
-print(varietyFeedbackNeuralNetProbability$net.result)
-  
 # Convert into 0/1 predictions
 varietyFeedbackNeuralNetPrediction <- 
   ifelse(varietyFeedbackNeuralNetProbability$net.result > 0.05, 1, 0)
-
-# Display Predictions
-print(varietyFeedbackNeuralNetPrediction)
 
 # Evaluate model by forming a confusion matrix
 varietyFeedbackNeuralNetConfusionMatrix <-
