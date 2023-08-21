@@ -9,6 +9,8 @@
 # install.packages("smotefamily")
 # install.packages("rpart.plot")
 # install.packages("neuralnet")
+# install.packages("e1071")
+# install.packages("tidybins")
 
 # load libraries
 library(tidyverse)
@@ -20,6 +22,8 @@ library(class)
 library(rpart)
 library(rpart.plot)
 library(neuralnet)
+library(e1071)
+library(tidybins)
 
 # set wd?
 #setwd("/Users/beau9/Documents/MIS545-Project")
@@ -261,13 +265,11 @@ varietyFeedbackLRConfusionMatrix[2, 1] /
 # Calcuate total predictive accuracy
 sum(diag(varietyFeedbackLRConfusionMatrix)) / nrow(varietyFeedbackLRTesting)
 
-# Multicollinearity?
+# Multicollinearity? The glm model does not work due to ratings dataset
+ols_vif_tol(varietyFeedbackLRModel)
 
 # Pairwise Correlation?
-
-
-
-
+cor(varietyFeedback$VarietySimcoe,varietyFeedback$VarietyCitra)
 
                      
 
@@ -357,8 +359,21 @@ varietyFeedbackKNNPredictiveAccuracy <- sum(diag(
 print(varietyFeedbackKNNPredictiveAccuracy)
 
 # Naive Bayes -------------------------------------------------------------
+# Bin data
+varietyFeedbackBinned <- varietyFeedback %>%
+  mutate(RankingBinGroup = ntile(Ranking, 3))
 
-
+# Loop through all columns and replace with bin means
+for (varietyNames in colnames(varietyFeedback)){
+  colNameToWrite <- paste0(varietyNames, "Binned")
+  varietyFeedbackBinned <- varietyFeedbackBinned %>%
+    group_by(RankingBinGroup) %>%
+    mutate(!!colNameToWrite := mean(!!as.name(varietyNames)))
+    if(as.name(varietyNames) != "RankingBinGroup"){
+      varietyFeedbackBinned <- varietyFeedbackBinned %>% 
+        select(-as.name(varietyNames))
+    }
+}
 
 
 # Decision Tree -----------------------------------------------------------
@@ -520,8 +535,3 @@ neuralNetPredictiveAccuracy <-
 
 # Display the predictive accuracy
 print(neuralNetPredictiveAccuracy)
-
-
-
-
-
