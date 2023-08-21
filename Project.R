@@ -362,18 +362,70 @@ print(varietyFeedbackKNNPredictiveAccuracy)
 # Bin data
 varietyFeedbackBinned <- varietyFeedback %>%
   mutate(RankingBinGroup = ntile(Ranking, 3))
+# varietyFeedbackBinned <- as.tibble(varietyFeedbackBinned)
 
 # Loop through all columns and replace with bin means
 for (varietyNames in colnames(varietyFeedback)){
   colNameToWrite <- paste0(varietyNames, "Binned")
-  varietyFeedbackBinned <- varietyFeedbackBinned %>%
-    group_by(RankingBinGroup) %>%
-    mutate(!!colNameToWrite := mean(!!as.name(varietyNames)))
-    if(as.name(varietyNames) != "RankingBinGroup"){
+  # print(varietyNames)
+    if((as.name(varietyNames) != "RankingBinGroup") && 
+       (as.name(varietyNames) != "Selected")){
+      varietyFeedbackBinned <- varietyFeedbackBinned %>%
+        group_by(RankingBinGroup) %>%
+        mutate(!!colNameToWrite := mean(!!as.name(varietyNames)))
       varietyFeedbackBinned <- varietyFeedbackBinned %>% 
         select(-as.name(varietyNames))
     }
 }
+varietyFeedbackBinned <- varietyFeedbackBinned %>%
+  as_tibble() %>%
+  select(-RankingBinGroup)
+
+# print(select(.data=varietyFeedbackBinned,-RankingBinGroup))
+
+# Splitting data 75/25
+sampleSet <- sample(nrow(varietyFeedbackBinned),
+                    round(nrow(varietyFeedbackBinned) * 0.75),
+                    replace = FALSE)
+
+# Put records in training 75%
+varietyFeedbackBinnedTraining <- varietyFeedbackBinned[sampleSet, ]
+
+# Put records in testing 25%
+varietyFeedbackBinnedTesting <- varietyFeedbackBinned[-sampleSet, ]
+
+# Train the naive bayes model
+varietyFeedbackNBModel <- naiveBayes(formula = Selected ~ .,
+                        data = varietyFeedbackBinnedTraining,
+                        laplace = 1)
+
+# Build probabilities for each record in testing dataset
+varietyFeedbackNBProb <- predict(varietyFeedbackNBModel,
+                             varietyFeedbackBinnedTesting,
+                             type = "raw")
+
+# Display probabilities in console
+print(varietyFeedbackNBProb)
+
+# Build probabilities on class
+varietyFeedbackNBPred <- predict(varietyFeedbackNBModel,
+                          varietyFeedbackBinnedTesting,
+                          type = "class")
+
+# Display probabilities in console
+print(varietyFeedbackNBPred)
+
+# Form confusion matrix
+varietyFeedbackNBConfusionMatrix <- table(varietyFeedbackBinnedTesting$Selected,
+                             varietyFeedbackNBPred)
+print(varietyFeedbackNBConfusionMatrix)
+
+# Calculate predictive accuracies
+varietyFeedbackNBAccuracy <- sum(diag(varietyFeedbackNBConfusionMatrix)) / 
+  nrow(varietyFeedbackBinnedTesting)
+
+# Display
+print(varietyFeedbackNBAccuracy)
 
 
 # Decision Tree -----------------------------------------------------------
