@@ -384,6 +384,7 @@ varietyFeedbackBinned <- varietyFeedbackBinned %>%
 # print(select(.data=varietyFeedbackBinned,-RankingBinGroup))
 
 # Splitting data 75/25
+set.seed(465)
 sampleSet <- sample(nrow(varietyFeedbackBinned),
                     round(nrow(varietyFeedbackBinned) * 0.75),
                     replace = FALSE)
