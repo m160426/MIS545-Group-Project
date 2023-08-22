@@ -170,8 +170,6 @@ corrplot(cor(varietyFeedback),
          method = "circle",
          type = "lower")
 
-
-
 # Logistic Regression -----------------------------------------------------
 # Split data into training and testing
 set.seed(545)
@@ -256,8 +254,8 @@ varietyFeedbackLRConfusionMatrix[1, 2] /
      varietyFeedbackLRConfusionMatrix[1, 1])
 
 # Calculate false negative rate
-# Precentage of the time our model predicted a variety would NOT be selected but
-# was
+# Precentage of the time our model predicted a variety would NOT be selected 
+# but was
 varietyFeedbackLRConfusionMatrix[2, 1] /
   (varietyFeedbackLRConfusionMatrix[2, 1] +
      varietyFeedbackLRConfusionMatrix[2, 2])
@@ -271,21 +269,13 @@ ols_vif_tol(varietyFeedbackLRModel)
 # Pairwise Correlation?
 cor(varietyFeedback$VarietySimcoe,varietyFeedback$VarietyCitra)
 
-                     
-
-
-
-
 # K-Nearest Neighbors -----------------------------------------------------
-
-
-
-
 # Seperate tibble into two
 varietyFeedbackLabels <- varietyFeedback %>% select(Selected)
 varietyFeedbackKNN <- varietyFeedback %>% select(-Selected)
 
 # Set seed and split data
+set.seed(545)
 sampleSetKNN <- sample(nrow(varietyFeedbackKNN),
                        round(nrow(varietyFeedbackKNN) * 0.75),
                        replace = FALSE)
@@ -338,7 +328,7 @@ print(kValueMatrix)
 varietyFeedbackKNNPrediction <- knn(train = varietyFeedbackKNNTraining,
                                     test = varietyFeedbackKNNTesting,
                                     cl = 
-                                      varietyFeedbackKNNTrainingLabels$Selected,
+                                     varietyFeedbackKNNTrainingLabels$Selected,
                                     k = 17)
 
 # Display Prediction
@@ -362,12 +352,10 @@ print(varietyFeedbackKNNPredictiveAccuracy)
 # Bin data
 varietyFeedbackBinned <- varietyFeedback %>%
   mutate(RankingBinGroup = ntile(Ranking, 3))
-# varietyFeedbackBinned <- as.tibble(varietyFeedbackBinned)
 
 # Loop through all columns and replace with bin means
 for (varietyNames in colnames(varietyFeedback)){
   colNameToWrite <- paste0(varietyNames, "Binned")
-  # print(varietyNames)
     if((as.name(varietyNames) != "RankingBinGroup") && 
        (as.name(varietyNames) != "Selected")){
       varietyFeedbackBinned <- varietyFeedbackBinned %>%
@@ -381,10 +369,8 @@ varietyFeedbackBinned <- varietyFeedbackBinned %>%
   as_tibble() %>%
   select(-RankingBinGroup)
 
-# print(select(.data=varietyFeedbackBinned,-RankingBinGroup))
-
 # Splitting data 75/25
-set.seed(465)
+set.seed(545)
 sampleSet <- sample(nrow(varietyFeedbackBinned),
                     round(nrow(varietyFeedbackBinned) * 0.75),
                     replace = FALSE)
@@ -428,13 +414,16 @@ varietyFeedbackNBAccuracy <- sum(diag(varietyFeedbackNBConfusionMatrix)) /
 # Display
 print(varietyFeedbackNBAccuracy)
 
-
 # Decision Tree -----------------------------------------------------------
 # Split Data into training and testing
+set.seed(545)
 sampleSetDT <- sample(nrow(varietyFeedback),
                       round(nrow(varietyFeedback) * .75),
                       replace = FALSE)
 varietyFeedbackDTTraining <- varietyFeedback[sampleSetDT, ]
+# Remove ranking to create different decision trees
+varietyFeedbackDTTraining <- varietyFeedbackDTTraining %>%
+  select(-Ranking)
 
 # Calculate Selected probability in training dataset
 summary(varietyFeedbackDTTraining$Selected)
@@ -442,11 +431,14 @@ print(86/295)
 
 # Put remaining records in testing tibble
 varietyFeedbackDTTesting <- varietyFeedback[-sampleSetDT, ]
+# Remove ranking to create different decision trees
+varietyFeedbackDTTesting <- varietyFeedbackDTTesting %>%
+  select(-Ranking)
 
 # Train decision tree model
 varietyFeedbackDTModel <- rpart(formula = Selected ~ .,
                                 method = "class",
-                                cp = .002,
+                                cp = .01,
                                 data = varietyFeedbackDTTraining)
 
 # Display DT plot
@@ -475,11 +467,14 @@ varietyFeedbackDTPredictiveAccuracy <- sum(diag(
 print(varietyFeedbackDTPredictiveAccuracy)
 
 # Generate Model with lower complexity parameter
-# This doesnt change DT plot at all, meaning no other complexity to uncover?
+# Train decision tree model
+varietyFeedbackDTModel <- rpart(formula = Selected ~ .,
+                                method = "class",
+                                cp = .005,
+                                data = varietyFeedbackDTTraining)
 
-
-
-
+# Display DT plot
+rpart.plot(varietyFeedbackDTModel)
 
 # Neural Network ----------------------------------------------------------
 # Scale features from 0 to 1
@@ -523,6 +518,7 @@ varietyFeedbackNeural <- varietyFeedbackNeural %>%
            (max(Diesel) - min(Diesel)))
   
 #  Split Data into training and testing
+set.seed(545)
 sampleSetNN <- sample(nrow(varietyFeedbackNeural),
                       round(nrow(varietyFeedbackNeural) * .75),
                       replace = FALSE)
