@@ -147,8 +147,11 @@ print("If a variety was detected as Citrusy it was selected 28.4% of the time")
 calculateZScore <- function(x) {
   (x - mean(x)) / sd(x)
 }
+# varietyFeedback <- varietyFeedback %>%
+#   mutate(across(where(is.numeric), calculateZScore))
+# Keyur Edit to avoid normalizing dummy variables
 varietyFeedback <- varietyFeedback %>%
-  mutate(across(where(is.numeric), calculateZScore))
+  mutate_at(vars(!contains("Variety") & !contains("Selec")), calculateZScore)
 
 # Recreate the displayAllHistograms()
 displayAllHistograms <- function(tibbleDataset) {
