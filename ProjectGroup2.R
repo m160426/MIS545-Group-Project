@@ -1,5 +1,6 @@
 # MIS545 Project
-# set seed as 545 when needed
+# Group 2 - Beau, Jeffrey, Julia, Keyur
+# ProjectGroup2.R
 
 # install libraries
 # install.packages("tidyverse")
@@ -25,8 +26,8 @@ library(neuralnet)
 library(e1071)
 library(tidybins)
 
-# set wd?
-#setwd("/Users/beau9/Documents/MIS545-Project")
+# set wd - Commented out to ensure execution on any computer
+# setwd("/Users/beau9/Documents/MIS545-Project")
 
 # read csv file
 # Lot - F
@@ -58,8 +59,7 @@ library(tidybins)
 # Notes - C
 varietyFeedback <- read_csv(file = "PerraultFarmsFeedback.csv",
                             col_types = "fffcciiiiiiiiiiiiiiiiiiiiic",
-                            col_names = TRUE
-                            )
+                            col_names = TRUE)
 
 # Convert Selected to logical
 varietyFeedback <- varietyFeedback %>%
@@ -141,7 +141,8 @@ varietyFeedback %>%
   filter(Citrus > 0) %>%
   count()
 print(71/250)
-print("If a variety was detected as Citrusy it was selected 28.4% of the time")
+print(paste("If a variety was detected as Citrusy it was",
+      "selected 28.4% of the time"))
 
 # Normalize data, avoid normalizing dummy variables
 calculateZScore <- function(x) {
@@ -254,7 +255,7 @@ varietyFeedbackLRConfusionMatrix[1, 2] /
      varietyFeedbackLRConfusionMatrix[1, 1])
 
 # Calculate false negative rate
-# Precentage of the time our model predicted a variety would NOT be selected 
+# Precentage of the time our model predicted a variety would NOT be selected
 # but was
 varietyFeedbackLRConfusionMatrix[2, 1] /
   (varietyFeedbackLRConfusionMatrix[2, 1] +
@@ -304,7 +305,7 @@ for (kValue in 1:nrow(varietyFeedbackKNNTraining)) {
     varietyFeedbackKNNPrediction <- knn(train = varietyFeedbackKNNTraining,
                                         test = varietyFeedbackKNNTesting,
                                         cl = 
-                                      varietyFeedbackKNNTrainingLabels$Selected,
+                                    varietyFeedbackKNNTrainingLabels$Selected,
                                         k = kValue)
     
     # Generate confusion matrix
@@ -317,7 +318,7 @@ for (kValue in 1:nrow(varietyFeedbackKNNTraining)) {
     
     # Add new row to the kValueMatrix
     kValueMatrix <- rbind(kValueMatrix, c(kValue, 
-                                          varietyFeedbackKNNPredictiveAccuracy))
+                                        varietyFeedbackKNNPredictiveAccuracy))
   }
 }
 
@@ -328,7 +329,7 @@ print(kValueMatrix)
 varietyFeedbackKNNPrediction <- knn(train = varietyFeedbackKNNTraining,
                                     test = varietyFeedbackKNNTesting,
                                     cl = 
-                                     varietyFeedbackKNNTrainingLabels$Selected,
+                                    varietyFeedbackKNNTrainingLabels$Selected,
                                     k = 17)
 
 # Display Prediction
@@ -403,7 +404,8 @@ varietyFeedbackNBPred <- predict(varietyFeedbackNBModel,
 print(varietyFeedbackNBPred)
 
 # Form confusion matrix
-varietyFeedbackNBConfusionMatrix <- table(varietyFeedbackBinnedTesting$Selected,
+varietyFeedbackNBConfusionMatrix <- table(
+  varietyFeedbackBinnedTesting$Selected,
                              varietyFeedbackNBPred)
 print(varietyFeedbackNBConfusionMatrix)
 
