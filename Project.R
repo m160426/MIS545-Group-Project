@@ -143,13 +143,10 @@ varietyFeedback %>%
 print(71/250)
 print("If a variety was detected as Citrusy it was selected 28.4% of the time")
 
-# Normalize data
+# Normalize data, avoid normalizing dummy variables
 calculateZScore <- function(x) {
   (x - mean(x)) / sd(x)
 }
-# varietyFeedback <- varietyFeedback %>%
-#   mutate(across(where(is.numeric), calculateZScore))
-# Keyur Edit to avoid normalizing dummy variables
 varietyFeedback <- varietyFeedback %>%
   mutate_at(vars(!contains("Variety") & !contains("Selec")), calculateZScore)
 
