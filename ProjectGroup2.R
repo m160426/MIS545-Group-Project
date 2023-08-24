@@ -175,7 +175,6 @@ corrplot(cor(varietyFeedback),
 print(cor(varietyFeedback$VarietySimcoe, varietyFeedback$VarietyMosaic))
 print(cor(varietyFeedback$Ranking, varietyFeedback$Rating))
 
-
 # Logistic Regression -----------------------------------------------------
 # Split data into training and testing
 set.seed(545)
@@ -190,13 +189,11 @@ summary(varietyFeedbackLRTraining$Selected)
 mean(varietyFeedbackLRTraining$Selected)
 classImbalanceMagnitude <- 215 / 167
 
-
 # Deal with class imbalance
 varietyFeedbackLRTrainingSmoted <-
   tibble(BLSMOTE(X = data.frame(varietyFeedbackLRTraining),
                  target = varietyFeedbackLRTraining$Selected,
                  dupSize = 4)$data)
-
 summary(varietyFeedbackLRTrainingSmoted$Selected)
 
 # Convert Selected back to logical
