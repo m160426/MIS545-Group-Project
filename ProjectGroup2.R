@@ -171,6 +171,11 @@ corrplot(cor(varietyFeedback),
          method = "circle",
          type = "lower")
 
+# Pairwise correlation
+print(cor(varietyFeedback$VarietySimcoe, varietyFeedback$VarietyMosaic))
+print(cor(varietyFeedback$Ranking, varietyFeedback$Rating))
+
+
 # Logistic Regression -----------------------------------------------------
 # Split data into training and testing
 set.seed(545)
@@ -424,6 +429,7 @@ sampleSetDT <- sample(nrow(varietyFeedback),
                       replace = FALSE)
 varietyFeedbackDTTraining <- varietyFeedback[sampleSetDT, ]
 # Remove ranking to create different decision trees
+# Comment out to create 95.9% accurate DT
 varietyFeedbackDTTraining <- varietyFeedbackDTTraining %>%
   select(-Ranking)
 
@@ -434,6 +440,7 @@ print(86/295)
 # Put remaining records in testing tibble
 varietyFeedbackDTTesting <- varietyFeedback[-sampleSetDT, ]
 # Remove ranking to create different decision trees
+# Comment out to create 95.9% accurate DT
 varietyFeedbackDTTesting <- varietyFeedbackDTTesting %>%
   select(-Ranking)
 
