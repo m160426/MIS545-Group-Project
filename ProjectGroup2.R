@@ -335,7 +335,7 @@ varietyFeedbackKNNPrediction <- knn(train = varietyFeedbackKNNTraining,
                                     test = varietyFeedbackKNNTesting,
                                     cl = 
                                     varietyFeedbackKNNTrainingLabels$Selected,
-                                    k = 17)
+                                    k = 19)
 
 # Display Prediction
 summary(varietyFeedbackKNNPrediction)
