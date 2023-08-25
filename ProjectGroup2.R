@@ -57,7 +57,7 @@ library(tidybins)
 # Plastic - I
 # Diesel - I
 # Notes - C
-varietyFeedback <- read_csv(file = "PerraultFarmsFeedback.csv",
+varietyFeedback <- read_csv(file = "Group2PerraultFarmsFeedback.csv",
                             col_types = "fffcciiiiiiiiiiiiiiiiiiiiic",
                             col_names = TRUE)
 
