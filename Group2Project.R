@@ -1,8 +1,8 @@
 # MIS545 Project
 # Group 2 - Beau, Jeffrey, Julia, Keyur
-# ProjectGroup2.R
+# Group2Project.R
 
-# install libraries
+# Install libraries
 # install.packages("tidyverse")
 # install.packages("dummies", repos = NULL, type="source")
 # install.packages("corrplot")
@@ -13,7 +13,7 @@
 # install.packages("e1071")
 # install.packages("tidybins")
 
-# load libraries
+# Load libraries
 library(tidyverse)
 library(dummies)
 library(corrplot)
@@ -26,10 +26,10 @@ library(neuralnet)
 library(e1071)
 library(tidybins)
 
-# set wd - Commented out to ensure execution on any computer
+# Set wd - Commented out to ensure execution on any computer
 # setwd("/Users/beau9/Documents/MIS545-Project")
 
-# read csv file
+# Read csv file
 # Lot - F
 # Variety - F
 # Fields - F
@@ -103,15 +103,12 @@ varietyFeedback <- as_tibble(dummy.data.frame(data = varietyFeedbackDataFrame,
 varietyFeedback %>%
   filter(VarietySimcoe > 0 & Selected == TRUE) %>%
   count() / 154
-
 varietyFeedback %>%
   filter(VarietyCitra > 0 & Selected == TRUE) %>%
   count() / 74
-
 varietyFeedback %>%
   filter(VarietyMosaic > 0 & Selected == TRUE) %>%
   count() / 146
-
 varietyFeedback %>%
   filter(VarietySabro > 0 & Selected == TRUE) %>%
   count() / 17
@@ -120,15 +117,12 @@ varietyFeedback %>%
 varietyFeedback %>%
   filter(VarietySimcoe > 0) %>%
   tally(Citrus) / 154
-
 varietyFeedback %>%
   filter(VarietyCitra > 0) %>%
   tally(Citrus) / 74
-
 varietyFeedback %>%
   filter(VarietyMosaic > 0) %>%
   tally(Citrus) / 146
-
 varietyFeedback %>%
   filter(VarietySabro > 0) %>%
   tally(Citrus) / 17
@@ -218,10 +212,10 @@ summary(varietyFeedbackLRModel)
 # being selected
 exp(coef(varietyFeedbackLRModel)["Ranking"])
 
-# increase in Rating means higher chance of being selected
+# Increase in Rating means higher chance of being selected
 exp(coef(varietyFeedbackLRModel)["Rating"])
 
-# increase in Citrus smell means lower odds of being selected
+# Increase in Citrus smell means lower odds of being selected
 exp(coef(varietyFeedbackLRModel)["Citrus"])
 
 # Increase in Tropical decreases odds of being selected
@@ -242,14 +236,14 @@ varietyFeedbackLRPrediction <-
 # Display prediction model
 print(varietyFeedbackLRPrediction)
 
-# create confusion matrix
+# Create confusion matrix
 varietyFeedbackLRConfusionMatrix <- table(varietyFeedbackLRTesting$Selected,
                                           varietyFeedbackLRPrediction)
 
-# display CM
+# Display CM
 print(varietyFeedbackLRConfusionMatrix)
 
-# calculate false positive rate
+# Calculate false positive rate
 # Precentage of the time the model predicted a variety would be selected but
 # it wasnt
 varietyFeedbackLRConfusionMatrix[1, 2] /
